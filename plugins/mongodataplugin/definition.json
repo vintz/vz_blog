@@ -1,0 +1,17 @@
+{
+    "Type": 0,
+    "ClassFile": "mongodataplugin.js",
+    "Id": "__mongoPostData",
+    "Label": "MongoDb",
+    "Description": "MONGO_DATA_DESCRIPTION", 
+    "Parameters":
+    [
+      {
+        "Name":"dburl",
+        "Type": "string",
+        "Description": "MONGO_DB_URL_LONG_TEXT",
+        "Label": "MONGO_DB_URL_LABEL",
+        "DefaultValue": ""
+      }
+    ]
+  }

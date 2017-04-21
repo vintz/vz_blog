@@ -1,0 +1,259 @@
+select,
+select:focus
+{
+    border-color: transparent transparent white;
+    border-image: none;
+    border-style: solid;
+    border-width: 0 0 1px;
+    color: white;
+    width: 220px;
+    background: transparent;
+}
+.CodeMirror {
+	background: transparent;
+    color: white;
+    height: calc(100vh - 350px);
+}
+
+.editor-toolbar a{
+    color: white !important;
+    border: transparent 0px solid;
+    border-radius: 0;
+}
+.editor-toolbar a:hover
+{
+    background: #aa5500 !important;
+}
+.editor-toolbar a.active{
+    color: #fefe54 !important;
+    background: #aa5500 !important;
+    border: transparent 0px solid;
+    border-radius: 0;
+}
+
+.CodeMirror-cursor
+{
+    border-left: 1px solid white;
+}
+
+input[type="text"],
+input[type="password"],
+.hasDatepicker
+{
+    background: transparent;
+    color: white;
+    margin-bottom: 10px;
+    border: none;
+    border-bottom: 2px solid #bbbbbb;
+}
+
+.post_title,
+.post_tags
+{
+    width: 100%;
+    margin-left: 0px;
+}
+
+.nav-container
+{
+    color: #444444;
+}
+
+h2
+{
+    white-space: normal;
+}
+
+.nav li a
+{
+    color: black;
+}
+
+.nav li:hover
+{
+    color: #bbbbbb;
+    background: black;
+}
+
+.tab1::before
+{
+    content:"";
+}
+.tab2::before
+{
+    content:"\00a0";
+}
+.tab3::before
+{
+    content:"\00a0\00a0";
+}
+.tab4::before
+{
+    content:"\00a0\00a0\00a0";
+}
+
+
+.fixed-nav
+{
+    position: fixed;
+    left: 12px;
+    right: calc(100% - 264px);
+}
+
+@media (min-width: 768px) and (max-width: 979px) {
+
+    .fixed-nav
+    {
+       right: calc(100% - 174px);
+    }
+}
+
+@media (max-width: 767px) {
+    .fixed-nav
+    {
+        position: static;
+    }
+}
+
+@media (min-width: 1200px) {
+
+}
+
+#alert
+{
+    position: relative;
+}
+
+.alert_btn
+{
+    border: 1px solid white;
+    padding: 2px 6px;
+    position: absolute;
+    right: 5px;
+    text-align: center;
+    top: 6px;
+}
+.alert-info
+{
+    color: white;
+}
+
+img
+{
+    filter: none;
+    image-rendering: pixelated;
+}
+.modal-dialog
+{
+    background: #000084 none repeat scroll 0 0;
+    position: absolute;
+    z-index: 1050;
+}
+
+.modal-footer {
+    background: #000084 none repeat scroll 0 0;
+}
+
+.modal-content {
+    background: #000084 none repeat scroll 0 0;
+    border: 1px solid white;
+}
+
+
+.modal-dialog::before {
+    background: #000084 none repeat scroll 0 0;
+    content: "";
+    height: 100%;
+    left: -10px;
+    padding: 10px;
+    position: absolute;
+    top: -10px;
+    width: 100%;
+    z-index: -20;
+}
+
+.close 
+{
+    opacity: 1;
+    color: white;
+}
+
+.modal-header,
+.modal-footer
+{
+    border: none;
+}
+
+select, input[type="file"] {
+    height: 25px;
+    line-height: 25px;
+}
+
+.verifier
+{
+    width: 100%;
+    height: 28px;
+    background: pink;
+}
+
+input.valid_password
+{
+    border-bottom: 2px solid #00aa00 !important;
+}
+
+input.invalid_password
+{
+     border-bottom: 2px solid #aa0000 !important;
+}
+
+.invalid_password[data-invalid]::after
+{
+    border-bottom: medium none !important;
+    color: #aa0000;
+    content: attr(data-invalid);
+    font-size: 0.8em;
+    left: 0.6em;
+    position: absolute;
+    top: calc(100% - 0.8em);
+}
+
+.field[data-description]:hover::after 
+{
+    border-bottom: medium none !important;
+    color: white;
+    content: attr(data-description);
+    display: block;
+    font-size: 0.8em;
+}
+
+.invalid_password::after
+{
+    border-bottom: medium none !important;
+}
+
+#password_span,
+#confirm_password_span
+{
+    width: calc(50% - 10px); 
+    margin-right: 5px; 
+    float: left;
+    position: relative;
+}
+
+.submit_btn,
+.submit_btn:active
+{
+    clear: both;
+    display: block;
+    margin: auto;
+}
+
+.disclaimer 
+{
+    color: white;
+}
+
+.main
+{
+    padding-bottom: 20px;
+}
