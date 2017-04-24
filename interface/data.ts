@@ -1,6 +1,5 @@
 export interface IPost
 {
-    $loki?: number;
     id?: number;
     title: string;
     content: string;
@@ -100,4 +99,12 @@ export enum DateCriteria
     Before,
     After,
     Equal
+}
+
+export interface IComment
+{
+    authorId: number;
+    content: string;
+    date: number;
+    validated: boolean;
 }

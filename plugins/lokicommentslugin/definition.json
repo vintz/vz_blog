@@ -1,0 +1,17 @@
+{
+    "Type": 0,
+    "ClassFile": "lokipostsplugin.js",
+    "Id": "__lokiPostData",
+    "Label": "Loki JS",
+    "Description": "LOKI_DATA_DESCRIPTION", 
+    "Parameters":
+    [
+      {
+        "Name":"dbfile",
+        "Type": "string",
+        "Description": "DB_FILE_LONG_TEXT",
+        "Label": "DB_FILE_LABEL",
+        "DefaultValue": "posts.json"
+      }
+    ]
+  }

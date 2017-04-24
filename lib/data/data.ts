@@ -1,10 +1,9 @@
-import {IPost, IUser} from '../../interface/data';
+import {IPost, IUser, IComment} from '../../interface/data';
 import {IConfig} from '../../interface/config';
 import {IPlugin, Pluggable, PluginType, IPluggable} from '../../interface/plugin';
 
 export abstract class DataAccess implements Pluggable
 {
-    
     public abstract Init(parameters: {[id:string]: any}, done: (err)=>void);
     public abstract CountUsers(): number;
     public abstract GetUser(id): IUser;
@@ -28,5 +27,15 @@ export abstract class PostDataAccess implements Pluggable
     public abstract SavePost(post: IPost, done:(err, posts: IPost)=>void,);
     public abstract GetPost(id,  done:(err, post:IPost)=>void, published?: boolean);
     public abstract DeletePost(post: IPost,  done:(err)=>void);
+    public abstract Init(parameters: {[id:string]: any}, done: (err)=>void);
+}
+
+export abstract class CommentDataAccess implements Pluggable
+{
+    public abstract GetComments(limit, offset, done:(err, posts:Array<IComment>)=>void, postId);
+    public abstract CountComments(done:(err, count:number)=>void, postId);
+    public abstract SaveComment(comment: IComment, done:(err, posts: IPost)=>void,);
+    public abstract GetComment(id,  done:(err, comment:IComment)=>void, published?: boolean);
+    public abstract DeleteComment(comment: IComment,  done:(err)=>void);
     public abstract Init(parameters: {[id:string]: any}, done: (err)=>void);
 }

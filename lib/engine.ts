@@ -82,14 +82,14 @@ export class BlogEngine
                 this.themeManager = new ThemeManager(this.config.themeFolderPath);
                 this.themeManager.Init();
 
-                var postDataPluginIdx = this.dataAccess.GetActivePlugin(PluginType.DataAccess);
+                var postDataPluginIdx = this.dataAccess.GetActivePlugin(PluginType.PostsDataAccess);
                 
                 if (postDataPluginIdx && postDataPluginIdx != '')
                 {
                     var currentPostPlugin = this.pluginManager.GetPlugin(postDataPluginIdx);
                     
                     this.postDataAccess = <PostDataAccess>(new currentPostPlugin.Class['Plugin']());
-                    var parameters = this.dataAccess.GetPluginParameters(PluginType.DataAccess);
+                    var parameters = this.dataAccess.GetPluginParameters(PluginType.PostsDataAccess);
                     parameters['getuser'] = this.dataAccess.GetUser;
                     
                     this.postDataAccess.Init(parameters, (err)=>
@@ -111,7 +111,7 @@ export class BlogEngine
 
     protected initDefaultPlugins()
     {
-       this.dataAccess.SaveActivePlugin(PluginType.DataAccess, '__');
+       this.dataAccess.SaveActivePlugin(PluginType.PostsDataAccess, '__');
     }
     
     protected finishStandardMode()
@@ -244,7 +244,7 @@ export class BlogEngine
                     {key: 'DE', label:this.translate('GERMAN')},
                     {key: 'IT', label:this.translate('ITALIAN')},
                 ],
-                dataPlugins: this.pluginManager.GetPlugins(PluginType.DataAccess),
+                dataPlugins: this.pluginManager.GetPlugins(PluginType.PostsDataAccess),
             },
             Jwt: this.auth.GenerateInstallerToken()
             
@@ -252,6 +252,13 @@ export class BlogEngine
         }
         var result = this.blogTpl.Render('{{#_admin}}default{{/_admin}}', context.Data);
         res.status(200).end(result);
+    }
+
+    protected manageError = (err, res: Response) =>
+    {
+        var errorString = JSON.stringify(err);
+        winston.error(errorString);
+        res.status(500).end(errorString);
     }
 
     protected callPosts = (req: express.Request, res: express.Response, next) => 
@@ -392,8 +399,8 @@ export class BlogEngine
 
                 case AdminContextName.MainAdmin:
 
-                    var dataPlugin =  this.dataAccess.GetActivePlugin(PluginType.DataAccess);
-                    var dataPluginParameters = this.dataAccess.GetPluginParameters(PluginType.DataAccess);
+                    var dataPlugin =  this.dataAccess.GetActivePlugin(PluginType.PostsDataAccess);
+                    var dataPluginParameters = this.dataAccess.GetPluginParameters(PluginType.PostsDataAccess);
                     context.Data.langs = [
                         {key: 'FR', label: this.translate('FRENCH')},
                         {key: 'EN', label: this.translate('ENGLISH')},
@@ -401,17 +408,24 @@ export class BlogEngine
                         {key: 'IT', label:this.translate('ITALIAN')},
                     ];
                     context.Data.themes = this.themeManager.GetThemes(this.config.currentThemePath);
-                    context.Data.dataPlugins = this.pluginManager.GetPlugins(PluginType.DataAccess, dataPlugin, dataPluginParameters),
+                    context.Data.dataPlugins = this.pluginManager.GetPlugins(PluginType.PostsDataAccess, dataPlugin, dataPluginParameters),
                     context.Data.config = this.config;
                     context.Data.sidenav = SidenavContextName.Config;
                     this.sendDefaultTemplate(context, res);
                     break;
                     
                 case AdminContextName.AuthorPosts: 
-                    this.generatePosts(req, context, user, ()=>
+                    this.generatePosts(req, context, user, (err)=>
                     {
-                        context.Data.sidenav = SidenavContextName.AuthorPosts;
-                        this.sendDefaultTemplate(context, res);
+                        if (err)
+                        {
+                            this.manageError(err, res);
+                        }
+                        else 
+                        {
+                            context.Data.sidenav = SidenavContextName.AuthorPosts;
+                            this.sendDefaultTemplate(context, res);
+                        }
                     });
                     
                     break;
@@ -424,7 +438,7 @@ export class BlogEngine
                         {
                             if (err)
                             {
-                                // TODO MANAGE ERROR
+                                this.manageError(err, res);
                             }
                             else 
                             {
@@ -471,9 +485,16 @@ export class BlogEngine
         switch (context.Name)
         {
             case BlogContextName.Posts:
-                this.generatePosts(req, context, null, ()=>
+                this.generatePosts(req, context, null, (err)=>
                 {
-                    this.sendDefaultTemplate(context, res);
+                        if (err)
+                        {
+                            this.manageError(err, res);
+                        }
+                        else 
+                        {
+                            this.sendDefaultTemplate(context, res);
+                        }
                 });
 
                 break;
@@ -486,13 +507,14 @@ export class BlogEngine
                     {
                         if  (err)
                         {
-                            // TODO MANAGE ERROR
+                            this.manageError(err, res);
                         }
                         else 
                         {
-                            context.Data.sidenav = SidenavContextName.Post;
+                            
                             if (post)
                             {
+                                context.Data.sidenav = SidenavContextName.Post;
                                 context.Data.post = post;
                                 var renderedMd = this.blogTpl.RenderText(context.Data.post.content);
                                 context.Data.post.content = renderedMd.text;
@@ -500,7 +522,7 @@ export class BlogEngine
                             }
                             else 
                             {
-                                context.Data.post = {content: this.translate(Errors.PostNotFound.Text)};
+                                context.Data.post = null; 
                             }
                             this.sendDefaultTemplate(context, res);
                         }
@@ -510,9 +532,16 @@ export class BlogEngine
                 }
                 else 
                 {
-                    this.generatePosts(req, context, null, ()=>
+                    this.generatePosts(req, context, null, (err)=>
                     {
-                         this.sendDefaultTemplate(context, res);
+                        if (err)
+                        {
+                            this.manageError(err, res);
+                        }
+                        else 
+                        {
+                            this.sendDefaultTemplate(context, res);
+                        }
                     });
                     
                 }
@@ -530,7 +559,7 @@ export class BlogEngine
         }
     }
 
-    protected generatePosts(req: Request, context: IContext, user: IUser, done: ()=>void)
+    protected generatePosts(req: Request, context: IContext, user: IUser, done: (err)=>void)
     {
         var nbr = parseInt(req.params[0]);
         var offset: number = nbr?nbr:0;
@@ -554,7 +583,7 @@ export class BlogEngine
         {
             if(err)
             {
-                // TODO MANAGE ERROR
+                done(err);
             }
             else 
             {
@@ -567,7 +596,7 @@ export class BlogEngine
                 {
                     if (err)
                     {
-                        // TODO MANAGE ERROR 
+                        done(err);
                     }
                     else 
                     {
@@ -577,7 +606,7 @@ export class BlogEngine
                         {
                             context.Data.next = offset + 1;
                         }
-                        done();
+                        done(null);
                     }
                 });
                 
@@ -693,7 +722,7 @@ export class BlogEngine
                 {
                     if (err)
                     {
-                        // TODO MANAGE ERROR
+                        this.manageError(err, res);
                     }
                     else 
                     {
@@ -740,7 +769,7 @@ export class BlogEngine
         }
     }
 
-    protected innerTogglePostPublished = (req: Request, done:(post: IPost) => void) =>
+    protected innerTogglePostPublished = (req: Request, res: Response,  done:(post: IPost) => void) =>
     {
         var post: IPost = null;
         if (req.body.id)
@@ -749,7 +778,7 @@ export class BlogEngine
             {
                 if (err)
                 {
-                    // TODO MANAGE ERROR
+                    this.manageError(err, res);
                 }
                 else 
                 {
@@ -766,7 +795,7 @@ export class BlogEngine
         var user: IUser = this.auth.DecodeToken(jwtInfo.jwt);
         if (jwtInfo.connected)
         {
-            this.innerTogglePostPublished(req, (post: IPost)=>
+            this.innerTogglePostPublished(req, res, (post: IPost)=>
             {
                 if (post)
                 {
@@ -775,7 +804,7 @@ export class BlogEngine
                     {
                         if (err)
                         {
-                            // TODO MANAGE ERROR
+                            this.manageError(err, res);
                         }
                         else 
                         {
@@ -816,7 +845,7 @@ export class BlogEngine
                 {
                     if (err)
                     {
-                        // TODO MANAGE ERROR
+                        this.manageError(err, res);
                     }
                     else if (post)
                     {
@@ -824,7 +853,7 @@ export class BlogEngine
                         {
                             if (err)
                             {
-                                // TODO MANAGE ERROR 
+                                this.manageError(err, res); 
                             }
                             else 
                             {
@@ -839,10 +868,17 @@ export class BlogEngine
                                         offset: req.body.offset
                                     }
                                 }
-                                this.generatePosts(req, context, user, ()=>
+                                this.generatePosts(req, context, user, (err)=>
                                 {
+                                    if (err)
+                                    {
+                                        this.manageError(err, res);
+                                    }
+                                    else 
+                                    {
                                     var result = this.blogTpl.Render('{{#_author}}{{context}}{{/_author}}', context.Data);
                                     res.status(200).send(result);
+                                    }
                                 })
                                 
                             }
@@ -873,7 +909,7 @@ export class BlogEngine
     {
         winston.info('Saving data plugin configuration');
         var dataPlugin = req.body.dataplugin;
-        this.dataAccess.SaveActivePlugin(PluginType.DataAccess,  dataPlugin.active);
+        this.dataAccess.SaveActivePlugin(PluginType.PostsDataAccess,  dataPlugin.active);
         var pluginParams = {};
         
         for (var key in dataPlugin.parameters)
@@ -882,7 +918,7 @@ export class BlogEngine
             pluginParams[current.name] = current.value;
         }
         
-        this.dataAccess.SetPluginParameters(PluginType.DataAccess, pluginParams);
+        this.dataAccess.SetPluginParameters(PluginType.PostsDataAccess, pluginParams);
     }
 
     protected saveAdminInfo = (req: Request, res: Response) =>

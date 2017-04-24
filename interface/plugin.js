@@ -1,6 +1,7 @@
 "use strict";
 (function (PluginType) {
-    PluginType[PluginType["DataAccess"] = 0] = "DataAccess";
+    PluginType[PluginType["PostsDataAccess"] = 0] = "PostsDataAccess";
+    PluginType[PluginType["CommentsDataAccess"] = 1] = "CommentsDataAccess";
 })(exports.PluginType || (exports.PluginType = {}));
 var PluginType = exports.PluginType;
 class Pluggable {
