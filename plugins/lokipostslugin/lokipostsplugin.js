@@ -1,8 +1,9 @@
 "use strict";
-const mongodb = require('mongodb');
+const loki = require('lokijs');
 const data_1 = require('../../interface/data');
+const fs = require('fs');
 const PostsCollectionName = 'Posts';
-class MongoDataAccess {
+class LokiDataAccess {
     constructor() {
         this.saveData = (data, collection) => {
             if (data.$loki) {
@@ -17,26 +18,28 @@ class MongoDataAccess {
         };
     }
     Init(parameters, done) {
-        var dburl = parameters['dburl'];
+        var dbFile = parameters['dbfile'];
         this.GetUser = parameters['getuser'];
-        this.client = new mongodb.MongoClient();
-        this.client.connect(dburl, (err, db) => {
-            if (err) {
-                done(err);
-            }
-            else {
-                this.db = db;
-                this.postsCollection = this.db.collection(PostsCollectionName);
-                done(null);
-            }
-        });
+        this.db = new loki(dbFile, { autoload: true, autosave: true, autoloadCallback: () => {
+                fs.exists(dbFile, (exists) => {
+                    if (exists) {
+                        this.postsCollection = this.db.getCollection(PostsCollectionName);
+                    }
+                    else {
+                        this.postsCollection = this.db.addCollection(PostsCollectionName, { indices: ['date'] });
+                    }
+                    done(null);
+                });
+            } });
     }
     ForceSave(done) {
-        // TODO
+        this.db.saveDatabase((err) => {
+            done();
+        });
     }
-    CountPosts(criteria) {
+    CountPosts(done, criteria) {
         var res = this.postsCollection.count(criteria);
-        return res;
+        done(null, res);
     }
     parseCriterias(criteria) {
         var criterias = [];
@@ -78,7 +81,7 @@ class MongoDataAccess {
                 return { "$and": criterias };
         }
     }
-    GetPosts(limit, offset, criteria) {
+    GetPosts(limit, offset, done, criteria) {
         var realCriterias = this.parseCriterias(criteria);
         var res = this.postsCollection.chain().find(realCriterias).sort((a, b) => {
             return b.publicationdate - a.publicationdate;
@@ -99,15 +102,17 @@ class MongoDataAccess {
             current.id = current.$loki;
             current.author = currentAuthors[current.authorId];
         }
-        return res;
+        done(null, res);
     }
-    SavePost(post) {
-        return this.saveData(post, this.postsCollection);
+    SavePost(post, done) {
+        post = this.saveData(post, this.postsCollection);
+        done(null, post);
     }
-    DeletePost(post) {
+    DeletePost(post, done) {
         this.postsCollection.remove(post);
+        done(null);
     }
-    GetPost(id, published) {
+    GetPost(id, done, published) {
         var res = this.postsCollection.get(id);
         if (res) {
             res = JSON.parse(JSON.stringify(res));
@@ -125,7 +130,7 @@ class MongoDataAccess {
                 res = null;
             }
         }
-        return res;
+        done(null, res);
     }
 }
-exports.Plugin = MongoDataAccess;
+exports.Plugin = LokiDataAccess;

@@ -1,6 +1,6 @@
 {
     "Type": 0,
-    "ClassFile": "mongodataplugin.js",
+    "ClassFile": "mongopostsplugin.js",
     "Id": "__mongoPostData",
     "Label": "MongoDb",
     "Description": "MONGO_DATA_DESCRIPTION", 

@@ -450,6 +450,7 @@ export class BlogEngine
                         };
                         context.Data.post = post;
                         context.Data.sidenav = SidenavContextName.EditPost;
+                        this.sendDefaultTemplate(context, res);
                     }
                     break;
             }
@@ -481,7 +482,7 @@ export class BlogEngine
                 var postId = context.Data.query.id?context.Data.query.id: context.Data.params;
                 if (postId)
                 {
-                    context.Data.post = this.postDataAccess.GetPost(postId, (err, post: IPost) =>
+                    this.postDataAccess.GetPost(postId, (err, post: IPost) =>
                     {
                         if  (err)
                         {
@@ -490,8 +491,9 @@ export class BlogEngine
                         else 
                         {
                             context.Data.sidenav = SidenavContextName.Post;
-                            if (context.Data.post)
+                            if (post)
                             {
+                                context.Data.post = post;
                                 var renderedMd = this.blogTpl.RenderText(context.Data.post.content);
                                 context.Data.post.content = renderedMd.text;
                                 context.Data.summary = renderedMd.summary;
@@ -575,6 +577,7 @@ export class BlogEngine
                         {
                             context.Data.next = offset + 1;
                         }
+                        done();
                     }
                 });
                 
@@ -686,7 +689,7 @@ export class BlogEngine
         {
             this.innerSavePost(req, user, (post: IPost)=>
             {
-                var data = this.postDataAccess.SavePost(post, (err, post: IPost)=>
+                this.postDataAccess.SavePost(post, (err, post: IPost)=>
                 {
                     if (err)
                     {
@@ -694,7 +697,7 @@ export class BlogEngine
                     }
                     else 
                     {
-                        res.status(200).json({id:data.id, published: data.published, message: this.translate('POST_SAVED')});
+                        res.status(200).json({id:post.id, published: post.published, message: this.translate('POST_SAVED')});
                     }
                 });
                
@@ -733,6 +736,7 @@ export class BlogEngine
                 publicationdate: new Date(req.body.publicationDate).getTime(),
                 published: false
             }
+            done(post);
         }
     }
 
@@ -767,7 +771,7 @@ export class BlogEngine
                 if (post)
                 {
                     post.published = !post.published;
-                    var data = this.postDataAccess.SavePost(post, (err, post: IPost)=>
+                    this.postDataAccess.SavePost(post, (err, post: IPost)=>
                     {
                         if (err)
                         {
@@ -776,7 +780,7 @@ export class BlogEngine
                         else 
                         {
                             var message = post.published?'POST_PUBLISHED': 'POST_UNPUBLISHED';
-                            res.status(200).json({id:data.id, published: data.published,  message: this.translate(message)});
+                            res.status(200).json({id:post.id, published: post.published,  message: this.translate(message)});
                         }
                     });
                     

@@ -8,7 +8,7 @@ import * as fs from 'fs';
 const PostsCollectionName = 'Posts';
 
 
-class MongoDataAccess implements  Pluggable, PostDataAccess
+class MongoPostAccess implements  Pluggable, PostDataAccess
 {
     protected db: mongodb.Db;
     protected client: mongodb.MongoClient;
@@ -149,31 +149,38 @@ class MongoDataAccess implements  Pluggable, PostDataAccess
         this.postsCollection.remove(post);
     }
 
-    public  GetPost(id, published?: boolean): IPost
+    public  GetPost(id, done:(err, post: IPost)=> void, published?: boolean)
     {
-        var res = this.postsCollection.findOne(;
-        if (res)
+        var res = this.postsCollection.findOne({id: id}, (err, post: IPost) =>
         {
-            res = JSON.parse(JSON.stringify(res));
-            if (!published || res.published)
+            if (err)
             {
-                var author = this.GetUser(res.authorId);
-                if (author != null)
-                {
-                    res.author = 
-                    {
-                        name: author.name
-                    }
-                }
-
-                res.id = res.$loki;
+                done(err, null);
             }
             else 
             {
-                res = null;
+                if (post)
+                {
+                    post = JSON.parse(JSON.stringify(post));
+                    if (!published || post.published)
+                    {
+                        var author = this.GetUser(post.authorId);
+                        if (author != null)
+                        {
+                            post.author = 
+                            {
+                                name: author.name
+                            }
+                        }
+                    }
+                    else 
+                    {
+                        post = null;
+                    }
+                }
+                done(null, post)
             }
-        }
-        return res;
+        });
     }
 
     private saveData = (data: any, collection: LokiCollection<any>)=>
@@ -198,4 +205,4 @@ class MongoDataAccess implements  Pluggable, PostDataAccess
 }
 
 
-export {MongoDataAccess as Plugin};
+export {MongoPostAccess as Plugin};

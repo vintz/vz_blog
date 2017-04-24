@@ -1,7 +1,7 @@
 {
     "Type": 0,
-    "ClassFile": "lokidataplugin.js",
-    "Id": "__postData",
+    "ClassFile": "lokipostsplugin.js",
+    "Id": "__lokiPostData",
     "Label": "Loki JS",
     "Description": "LOKI_DATA_DESCRIPTION", 
     "Parameters":
