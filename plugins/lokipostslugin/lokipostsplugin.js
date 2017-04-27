@@ -6,13 +6,13 @@ const PostsCollectionName = 'Posts';
 class LokiDataAccess {
     constructor() {
         this.saveData = (data, collection) => {
-            if (data.$loki) {
+            if (data['$loki']) {
                 data = collection.update(data);
             }
             else {
                 data.createDate = Date.now();
                 data = collection.insert(data);
-                data.id = data.$loki;
+                data.id = data['$loki'];
             }
             return data;
         };
@@ -99,7 +99,7 @@ class LokiDataAccess {
                         };
                 }
             }
-            current.id = current.$loki;
+            current.id = current['$loki'];
             current.author = currentAuthors[current.authorId];
         }
         done(null, res);
@@ -124,7 +124,7 @@ class LokiDataAccess {
                             name: author.name
                         };
                 }
-                res.id = res.$loki;
+                res.id = res['$loki'];
             }
             else {
                 res = null;

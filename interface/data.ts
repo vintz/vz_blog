@@ -9,6 +9,7 @@ export interface IPost
     tags: string[];
     published: boolean;
     createDate?: number;
+    comments?: IComment[];
 
 }
 
@@ -103,6 +104,8 @@ export enum DateCriteria
 
 export interface IComment
 {
+    id: string;
+    author?: string;
     authorId: number;
     content: string;
     date: number;

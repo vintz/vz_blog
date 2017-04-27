@@ -128,7 +128,7 @@ class LokiDataAccess implements  Pluggable, PostDataAccess
                     }
                 }
             }
-            current.id = current.$loki;
+            current.id = current['$loki'];
             current.author = currentAuthors[current.authorId]
         }
         done(null, res);
@@ -163,7 +163,7 @@ class LokiDataAccess implements  Pluggable, PostDataAccess
                     }
                 }
 
-                res.id = res.$loki;
+                res.id = res['$loki'];
             }
             else 
             {
@@ -173,9 +173,9 @@ class LokiDataAccess implements  Pluggable, PostDataAccess
         done(null, res)
     }
 
-    private saveData = (data: any, collection: LokiCollection<any>)=>
+    private saveData = (data: IPost, collection: LokiCollection<any>)=>
     {
-       if (data.$loki)
+       if (data['$loki'])
        {
            data = collection.update(data);
        }
@@ -183,7 +183,7 @@ class LokiDataAccess implements  Pluggable, PostDataAccess
        {
            data.createDate = Date.now();
            data = collection.insert(data);
-           data.id = data.$loki;
+           data.id = data['$loki'];
        }
        return data;
     }

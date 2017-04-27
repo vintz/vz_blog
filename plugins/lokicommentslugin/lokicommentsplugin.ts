@@ -1,197 +1,105 @@
 import * as loki from 'lokijs';
-import { PostDataAccess} from '../../lib/data/data';
-import {IUser, IPost, IPostsCriterias, IPublicationDateCriteria, DateCriteria} from '../../interface/data';
-import {IConfig, InitConfig} from '../../interface/config';
+import {CommentDataAccess} from '../../lib/data/data';
+import {IUser, IComment, IPost} from '../../interface/data';
 import {IPlugin, Pluggable, PluginType, IPluggable} from '../../interface/plugin';
 
 import * as fs from 'fs';
-const PostsCollectionName = 'Posts';
 
 
-class LokiDataAccess implements  Pluggable, PostDataAccess
+class LokiDataAccess implements  Pluggable, CommentDataAccess
 {
-    protected db: Loki;
-    protected postsCollection: LokiCollection<IPost>;
-    
-    constructor()
-    {
+    protected getUser: (id: number)=> IUser; 
+    protected savePost:  (post:IPost,  done:(err, post: IPost) => void) => void;
 
-    }
-    
-    Init(parameters: {[id:string]: any}, done: (err)=>void)
+    public  GetComments(limit, offset, post: IPost): IComment[]
     {
-        var dbFile = parameters['dbfile'];
-        this.GetUser = parameters['getuser'];
-        this.db = new loki(dbFile, {autoload: true, autosave: true, autoloadCallback: () =>
+        var result: IComment[] = [];
+        if (post.comments && post.comments.length > offset)
         {
-            fs.exists(dbFile, (exists)=>
+            post.comments.sort((a: IComment, b: IComment)=>
             {
-                if (exists)
+                return a.date - b.date;
+            });
+
+            for (var idx = offset; idx < Math.min(limit + offset, post.comments.length); idx++ )
+            {
+                var currentComment = post.comments[idx];
+                currentComment.author = this.getUser(currentComment.authorId).name;
+                result.push(post.comments[idx]);
+            }
+        }
+        return result;
+    }
+
+    public  CountComments(done:(err, count:number)=>void,  post: IPost): number
+    {
+        var result = 0;
+        if (post.comments)
+        {
+            result = post.comments.length;
+        }
+        return result;
+    }
+
+    public  SaveComment(comment: IComment, post: IPost, done:(err, comment: IComment)=>void)
+    {
+        var currentCommentIdx = -1;
+        if (comment.id && post.comments)
+        {
+            for (var idx = 0; idx < post.comments.length; idx++)
+            {
+                if (post.comments[idx].id == comment.id)
                 {
-                    this.postsCollection = <LokiCollection<IPost>>this.db.getCollection(PostsCollectionName);
+                    currentCommentIdx = idx;
                 }
-                else 
-                {
-                    this.postsCollection = <LokiCollection<IPost>>this.db.addCollection(PostsCollectionName, {indices: ['date']});
-                }
-                done(null);
-            })
-        }});
+            }
+        }
         
-        
-    }
-
-    public ForceSave(done: ()=>void)
-    {
-        this.db.saveDatabase((err)=>
+        if (!post.comments)
         {
-            done();
-        })
-    }
-    
-    public CountPosts(done:(err, count)=>void, criteria?: {})
-    {
-        var res = this.postsCollection.count(criteria);
-        done(null, res);
-    }
-
-    protected parseCriterias(criteria: IPostsCriterias): {}
-    {
-        var criterias = [];
-        if (criteria == null)
-        {
-            return {};
-        }
-        if (criteria.tags)
-        {
-            var tags = {"tags":{"$in": criteria.tags.join}};
-            criterias.push(tags);
-        }
-        if (typeof criteria.published != 'undefined')
-        {
-            var published = {"published":{"$eq": criteria.published}};
-            criterias.push(published);
-        }
-        if (criteria.publicationdate)
-        {
-            var publicationDate = null;
-            switch(criteria.publicationdate.criteria)
-            {
-                case DateCriteria.Before:
-                    publicationDate = {"publicationdate":{"$lt":criteria.publicationdate.date}};
-                    break;
-                case DateCriteria.Equal:
-                    publicationDate = {"publicationdate":{"$eq":criteria.publicationdate.date}}
-                    break;
-                case DateCriteria.After:
-                    publicationDate = {"publicationdate":{"$gt":criteria.publicationdate.date}}
-                    break;
-            }
-            criterias.push(publicationDate);
-        }
-        if (criteria.author)
-        {
-            var author = {"authorId":{"$eq":criteria.author}};
+            post.comments = [];
         }
 
-        switch (criterias.length)
+        if (currentCommentIdx >= 0)
         {
-            case 0:
-                return {};
-            case 1:
-                return criterias[0];
-            default:
-                return {"$and":criterias};
+            post.comments[currentCommentIdx] = comment;
         }
+        else 
+        {
+            post.comments.push(comment);
+        }
+
+        this.savePost(post, (err, post)=>
+        {
+            done(err, comment);
+        });
     }
-    public  GetPosts(limit: number, offset: number, done:(err, posts: IPost[]) => void, criteria?:IPostsCriterias)
+
+    public  DeleteComment(comment: IComment, post: IPost,  done:(err)=>void)
     {
-        var realCriterias = this.parseCriterias(criteria);
-        var res = this.postsCollection.chain().find(realCriterias).sort((a: IPost, b:IPost)=>
+        if (comment.id && post.comments)
         {
-            return b.publicationdate - a.publicationdate;
-        }).offset(offset).limit(limit).data();
-        
-        var currentAuthors = {};
-        currentAuthors['undefined'] = {name: 'NO_AUTHOR'};
-        for (var key in res)
-        {
-            var current = res[key];
-            if (!(current.authorId in currentAuthors))
-            {
-                var author = this.GetUser(current.authorId);
-                if (author != null)
+            for (var idx = 0; idx < post.comments.length; idx++)
+            {   
+                if (post.comments[idx].id == comment.id)
                 {
-                    currentAuthors[current.authorId] = 
-                    {   
-                        name: author.name
-                    }
+                    delete post.comments[idx];
+                    break;
                 }
             }
-            current.id = current['$loki'];
-            current.author = currentAuthors[current.authorId]
         }
-        done(null, res);
-    }
-
-    public  SavePost(post:IPost,  done:(err, post: IPost) => void)
-    {
-       post = this.saveData(post, this.postsCollection);
-       done(null, post);
-    }
-
-    public DeletePost(post: IPost, done:(err) => void)
-    {
-        this.postsCollection.remove(post);
-        done(null);
-    }
-
-    public  GetPost(id, done:(err, post: IPost) => void, published?: boolean)
-    {
-        var res = this.postsCollection.get(id);
-        if (res)
+       
+        this.savePost(post, (err, post) =>
         {
-            res = JSON.parse(JSON.stringify(res));
-            if (!published || res.published)
-            {
-                var author = this.GetUser(res.authorId);
-                if (author != null)
-                {
-                    res.author = 
-                    {
-                        name: author.name
-                    }
-                }
-
-                res.id = res['$loki']
-            }
-            else 
-            {
-                res = null;
-            }
-        }
-        done(null, res)
+            done(err);
+        });
     }
-
-    private saveData = (data: any, collection: LokiCollection<any>)=>
-    {
-       if (data['$loki'])
-       {
-           data = collection.update(data);
-       }
-       else 
-       {
-           data.createDate = Date.now();
-           data = collection.insert(data);
-           data.id = data['$loki'];
-       }
-       return data;
-    }
-
-    protected GetUser: (id: number)=> IUser; 
     
-   
-   
+    public  Init(parameters: {[id:string]: any}, done: (err)=>void)
+    {
+        this.savePost = parameters['savePost'];
+        this.getUser = parameters['getuser'];
+    }
 }
 
 

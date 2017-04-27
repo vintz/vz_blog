@@ -32,10 +32,9 @@ export abstract class PostDataAccess implements Pluggable
 
 export abstract class CommentDataAccess implements Pluggable
 {
-    public abstract GetComments(limit, offset, done:(err, posts:Array<IComment>)=>void, postId);
-    public abstract CountComments(done:(err, count:number)=>void, postId);
-    public abstract SaveComment(comment: IComment, done:(err, posts: IPost)=>void,);
-    public abstract GetComment(id,  done:(err, comment:IComment)=>void, published?: boolean);
-    public abstract DeleteComment(comment: IComment,  done:(err)=>void);
+    public abstract GetComments(limit, offset, post: IPost);
+    public abstract CountComments(done:(err, count:number)=>void,  post: IPost);
+    public abstract SaveComment(comment: IComment, post: IPost, done:(err, comment: IComment)=>void);
+    public abstract DeleteComment(comment: IComment, post: IPost,  done:(err)=>void);
     public abstract Init(parameters: {[id:string]: any}, done: (err)=>void);
 }

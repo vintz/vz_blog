@@ -102,7 +102,6 @@ class MongoPostAccess {
                                 };
                         }
                     }
-                    current.id = current.$loki;
                     current.author = currentAuthors[current.authorId];
                 }
                 done(null, res);
