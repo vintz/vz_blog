@@ -46,6 +46,28 @@
     </div>
 {{/dataPlugins}}
 
+<h2>
+    {{#_translate}}COMMENTS_PLUGIN{{/_translate}} 
+</h2>
+<select id="commentsPlugin" value="" onchange="showDataPluginParameters()">
+    {{#commentsPlugins}}
+        <option value="{{Id}}">{{Label}}</option>
+    {{/commentsPlugins}}
+</select>
+
+{{#commentsPlugins}}
+    <div class="pluginParameters hidden" id="pluginParameters_{{Id}}" >
+        <blockquote>
+            {{#_translate}}{{Description}}{{/_translate}} 
+        </blockquote>
+    {{#Parameters}}
+        <div class="field" data-description="{{#_translate}}{{Description}}{{/_translate}}"><input id="{{Name}}" class="post_title" type="text" placeholder="{{#_translate}}{{Label}}{{/_translate}}" value="{{DefaultValue}}" ></input></div>
+    {{/Parameters}}
+    </div>
+{{/commentsPlugins}}
+
+
+
 
 <button class="submit_btn btn btn-default" onclick="saveAdminInfo();" >{{#_translate}}SAVE{{/_translate}}</button>
 

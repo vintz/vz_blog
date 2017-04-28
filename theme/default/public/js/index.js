@@ -34,3 +34,14 @@ function decodeHtml(html) {
     txt.innerHTML = html;
     return txt.value;
 }
+
+function savecomment()
+{
+    var comment = jQuery('#newComment').val();
+    var postId = jQuery('#postId').val();
+    var data = { comment: comment, postId: postId, token: getSessionToken() };
+    post(getDomain(), '/savecomment', '', data, null, function ( result, status) {
+        alert(result);
+    });
+
+}

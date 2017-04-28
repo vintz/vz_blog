@@ -60,6 +60,8 @@ exports.InitConfig = () => {
         challengeTimeToLive: 300,
         challengeNbr: 3,
         secretKey: tools.GenerateRandomString(25),
+        onlyConnectedComment: false,
+        commentsAutoValidated: true,
     };
     return config;
 };

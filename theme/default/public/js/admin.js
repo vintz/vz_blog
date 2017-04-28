@@ -6,7 +6,7 @@ var savepost = function()
     var id = jQuery('#post_id').val();
     var tags = jQuery('#tags').val();
     var data = { title: title, publicationDate: publicationDate, content: content, id: id, tags: tags, token: getSessionToken() };
-    post(getDomain(), '/savePost', '', data, null, function ( result, status) {
+    post(getDomain(), '/savepost', '', data, null, function ( result, status) {
         if (result.id)
         {
             jQuery('#post_id').val(result.id);
@@ -141,6 +141,17 @@ var saveConfigMain = function(installer)
         activeDataPluginParameters.push(parameter);
     });
 
+    var activeCommentPlugin = jQuery('#commentsPlugin').val();
+    var activeCommentPluginParameters = [];
+    jQuery('#pluginParameters_'+activeCommentPlugin +' :input').each(function(idx,elem){	
+        
+        var parameter = {
+            name: this.id,
+            value: this.value
+        };
+        activeCommentPluginParameters.push(parameter);
+    });
+
     var info = {
         title: title,
         motto: motto,
@@ -149,9 +160,13 @@ var saveConfigMain = function(installer)
         {   
             active: activeDataPlugin,
             parameters: activeDataPluginParameters
+        },
+        commentsplugin:
+        {   
+            active: activeCommentPlugin,
+            parameters: activeCommentPluginParameters
         }
     }
-
     if (installer)
     {
         info.account = jQuery('#account').val().toLowerCase();
@@ -183,6 +198,7 @@ var showDataPluginParameters = function()
 {
     jQuery('.pluginParameters').addClass('hidden');
     jQuery('#pluginParameters_'+jQuery('#dataPlugin').val()).removeClass('hidden');
+    jQuery('#pluginParameters_'+jQuery('#commentsPlugin').val()).removeClass('hidden');
 }
 
 

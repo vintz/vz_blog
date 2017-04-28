@@ -12,9 +12,9 @@ import {LokiDataAccess} from './data/lokidata';
 
 
 import {BlogTplEngine} from './template/blogtpl';
-import {IContext, BlogContextName, AdminContextName, SidenavContextName, IPost, IUser, DateCriteria} from '../interface/data';
+import {IContext, BlogContextName, AdminContextName, SidenavContextName, IPost, IComment, IUser, DateCriteria} from '../interface/data';
 import {IConfig, InitConfig, IMenuButton, ButtonType} from '../interface/config';
-import {DataAccess, PostDataAccess} from './data/data';
+import {DataAccess, PostDataAccess, CommentDataAccess} from './data/data';
 import {PostParser} from './parsing/parser';
 import {Auth} from './authentication/auth';
 import {PluginManager} from './managers/pluginmanager';
@@ -33,6 +33,7 @@ export class BlogEngine
     protected dataAccess: DataAccess;
     protected plugins: {[id:number]: IPlugin};
     protected postDataAccess: PostDataAccess;
+    protected commentDataAccess: CommentDataAccess;
     protected postParser: PostParser;
     protected router: express.Router;
     protected config: IConfig;
@@ -105,6 +106,32 @@ export class BlogEngine
                         }
                     });
                 }
+                
+                var commentDataPluginIdx = this.dataAccess.GetActivePlugin(PluginType.CommentsDataAccess);
+                if (commentDataPluginIdx && commentDataPluginIdx != '')
+                {
+                    var currentCommentPlugin = this.pluginManager.GetPlugin(commentDataPluginIdx);
+                    
+                    this.commentDataAccess = <CommentDataAccess>(new currentCommentPlugin.Class['Plugin']());
+                    var parameters = this.dataAccess.GetPluginParameters(PluginType.CommentsDataAccess);
+                    parameters['getuser'] = this.dataAccess.GetUser;
+                    parameters['savepost'] = this.postDataAccess.SavePost;
+                    parameters['getpost'] = this.postDataAccess.GetPost;
+                    
+                    this.commentDataAccess.Init(parameters, (err)=>
+                    {
+                        if (!err)
+                        {
+                            this.finishStandardMode();
+                            this.finishInitialization(done);
+                        }
+                        else 
+                        {
+                            winston.error(Errors.UnableToStartcommentDataAccess.Text);
+                        }
+                    });
+                }
+
             }
         });
     }
@@ -135,6 +162,7 @@ export class BlogEngine
         this.router.post('/saveadvancedconfig', this.saveAdvancedConfig);
         this.router.post('/saveconfig', this.saveConfig);
         
+        this.router.post('/savecomment', this.saveComment);
         
         
         this.actions = {};
@@ -245,11 +273,13 @@ export class BlogEngine
                     {key: 'IT', label:this.translate('ITALIAN')},
                 ],
                 dataPlugins: this.pluginManager.GetPlugins(PluginType.PostsDataAccess),
+                commentsPlugins: this.pluginManager.GetPlugins(PluginType.CommentsDataAccess),
             },
             Jwt: this.auth.GenerateInstallerToken()
             
             
         }
+
         var result = this.blogTpl.Render('{{#_admin}}default{{/_admin}}', context.Data);
         res.status(200).end(result);
     }
@@ -397,10 +427,12 @@ export class BlogEngine
                     this.sendDefaultTemplate(context, res);
                     break;
 
-                case AdminContextName.MainAdmin:
+                case AdminContextName.MainAdmin: // TODO ADD COMMENTS PLUGIN TO CONFIG SCREEN
 
                     var dataPlugin =  this.dataAccess.GetActivePlugin(PluginType.PostsDataAccess);
                     var dataPluginParameters = this.dataAccess.GetPluginParameters(PluginType.PostsDataAccess);
+                    var commentsPlugin =  this.dataAccess.GetActivePlugin(PluginType.CommentsDataAccess);
+                    var commentsPluginParameters = this.dataAccess.GetPluginParameters(PluginType.CommentsDataAccess);
                     context.Data.langs = [
                         {key: 'FR', label: this.translate('FRENCH')},
                         {key: 'EN', label: this.translate('ENGLISH')},
@@ -408,7 +440,8 @@ export class BlogEngine
                         {key: 'IT', label:this.translate('ITALIAN')},
                     ];
                     context.Data.themes = this.themeManager.GetThemes(this.config.currentThemePath);
-                    context.Data.dataPlugins = this.pluginManager.GetPlugins(PluginType.PostsDataAccess, dataPlugin, dataPluginParameters),
+                    context.Data.dataPlugins = this.pluginManager.GetPlugins(PluginType.PostsDataAccess, dataPlugin, dataPluginParameters);
+                    context.Data.commentsPlugins = this.pluginManager.GetPlugins(PluginType.CommentsDataAccess, commentsPlugin, commentsPluginParameters);
                     context.Data.config = this.config;
                     context.Data.sidenav = SidenavContextName.Config;
                     this.sendDefaultTemplate(context, res);
@@ -738,6 +771,41 @@ export class BlogEngine
             res.status(401).json({error: Errors.NotLogged, text: this.translate(Errors.NotLogged.Text)}); 
         }
     }
+
+    protected saveComment = (req: Request, res: Response) =>
+    {
+        res.setHeader('Access-Control-Allow-Origin','*');
+        var jwtInfo = this.getJwtInfo(req);
+        var user: IUser = this.auth.DecodeToken(jwtInfo.jwt);
+        var comment: IComment = 
+        {
+            id: null,
+            content: req.body.comment,
+            date: Date.now(),
+            authorId: jwtInfo.connected?user.$loki:null,
+            validated: this.config.commentsAutoValidated
+        }
+        var postId = req.body.postId
+
+        if (jwtInfo.connected || !this.config.onlyConnectedComment)
+        {
+            this.commentDataAccess.SaveComment(comment, postId, (err, comment: IComment)=>
+            {
+                if (err)
+                {
+                    this.manageError(err, res);
+                }
+                else 
+                {
+                    res.status(200).json({id:comment.id, message: this.translate('COMMENT_SAVED')});
+                }
+            });
+        }
+        else
+        {
+            res.status(401).json({error: Errors.NotLogged, text: this.translate(Errors.NotLogged.Text)}); 
+        }
+    }
     
     protected innerSavePost(req: Request, user: IUser, done:(post:IPost)=>void)
     {
@@ -919,6 +987,18 @@ export class BlogEngine
         }
         
         this.dataAccess.SetPluginParameters(PluginType.PostsDataAccess, pluginParams);
+
+        var commentPlugin = req.body.commentsplugin;
+        this.dataAccess.SaveActivePlugin(PluginType.CommentsDataAccess,  commentPlugin.active);
+        var pluginParams = {};
+        
+        for (var key in commentPlugin.parameters)
+        {
+            var current = commentPlugin.parameters[key];
+            pluginParams[current.name] = current.value;
+        }
+        
+        this.dataAccess.SetPluginParameters(PluginType.CommentsDataAccess, pluginParams);
     }
 
     protected saveAdminInfo = (req: Request, res: Response) =>

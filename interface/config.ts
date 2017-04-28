@@ -27,6 +27,8 @@ export interface IConfig
     challengeTimeToLive: number;
     challengeNbr: number;
     secretKey: string;
+    onlyConnectedComment: boolean;
+    commentsAutoValidated: boolean;
     
 }
 
@@ -104,6 +106,8 @@ export var InitConfig = ():IConfig =>
         challengeTimeToLive: 300,
         challengeNbr: 3,
         secretKey: tools.GenerateRandomString(25),
+        onlyConnectedComment: false,
+        commentsAutoValidated: true,
     }
     
     return config;

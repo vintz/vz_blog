@@ -10,95 +10,137 @@ class LokiDataAccess implements  Pluggable, CommentDataAccess
 {
     protected getUser: (id: number)=> IUser; 
     protected savePost:  (post:IPost,  done:(err, post: IPost) => void) => void;
+    protected getPost:  (id,  done:(err, post: IPost) => void, published?: boolean) => void;
 
-    public  GetComments(limit, offset, post: IPost): IComment[]
+    public  GetComments(limit, offset, postId: number, done:(err, comments: Array<IComment>)=>void)
     {
         var result: IComment[] = [];
-        if (post.comments && post.comments.length > offset)
+        this.getPost(postId, (err, currentPost) =>
         {
-            post.comments.sort((a: IComment, b: IComment)=>
+            if (err)
             {
-                return a.date - b.date;
-            });
-
-            for (var idx = offset; idx < Math.min(limit + offset, post.comments.length); idx++ )
-            {
-                var currentComment = post.comments[idx];
-                currentComment.author = this.getUser(currentComment.authorId).name;
-                result.push(post.comments[idx]);
+                done(err, result)
             }
-        }
-        return result;
-    }
-
-    public  CountComments(done:(err, count:number)=>void,  post: IPost): number
-    {
-        var result = 0;
-        if (post.comments)
-        {
-            result = post.comments.length;
-        }
-        return result;
-    }
-
-    public  SaveComment(comment: IComment, post: IPost, done:(err, comment: IComment)=>void)
-    {
-        var currentCommentIdx = -1;
-        if (comment.id && post.comments)
-        {
-            for (var idx = 0; idx < post.comments.length; idx++)
+            else 
             {
-                if (post.comments[idx].id == comment.id)
+                if (currentPost.comments && currentPost.comments.length > offset)
                 {
-                    currentCommentIdx = idx;
+                    currentPost.comments.sort((a: IComment, b: IComment)=>
+                    {
+                        return a.date - b.date;
+                    });
+
+                    for (var idx = offset; idx < Math.min(limit + offset, currentPost.comments.length); idx++ )
+                    {
+                        var currentComment = currentPost.comments[idx];
+                        currentComment.author = this.getUser(currentComment.authorId).name;
+                        result.push(currentPost.comments[idx]);
+                    }
                 }
+                done(null, result);
             }
-        }
-        
-        if (!post.comments)
-        {
-            post.comments = [];
-        }
-
-        if (currentCommentIdx >= 0)
-        {
-            post.comments[currentCommentIdx] = comment;
-        }
-        else 
-        {
-            post.comments.push(comment);
-        }
-
-        this.savePost(post, (err, post)=>
-        {
-            done(err, comment);
         });
     }
 
-    public  DeleteComment(comment: IComment, post: IPost,  done:(err)=>void)
+    public  CountComments(done:(err, count:number)=>void,  postId: number)
     {
-        if (comment.id && post.comments)
+        var result = 0;
+        this.getPost(postId, (err, currentPost) =>
         {
-            for (var idx = 0; idx < post.comments.length; idx++)
-            {   
-                if (post.comments[idx].id == comment.id)
-                {
-                    delete post.comments[idx];
-                    break;
-                }
+            if(err)
+            {
+                done(err, 0);
             }
-        }
-       
-        this.savePost(post, (err, post) =>
+            else if (currentPost.comments)
+            {
+                result = currentPost.comments.length;
+            }
+            done(null, result);
+        });
+        
+    }
+
+    public  SaveComment(comment: IComment, postId: number, done:(err, comment: IComment)=>void)
+    {
+        var currentCommentIdx = -1;
+        this.getPost(postId, (err, currentPost) =>
         {
-            done(err);
+            if (err)
+            {
+                done(err, null);
+            }
+            else 
+            {
+                if (comment.id && currentPost.comments)
+                {
+                    for (var idx = 0; idx < currentPost.comments.length; idx++)
+                    {
+                        if (currentPost.comments[idx].id == comment.id)
+                        {
+                            currentCommentIdx = idx;
+                        }
+                    }
+                }
+                
+                if (!currentPost.comments)
+                {
+                    currentPost.comments = [];
+                }
+
+                if (currentCommentIdx >= 0)
+                {
+                    currentPost.comments[currentCommentIdx] = comment;
+                }
+                else 
+                {
+                    comment.id = currentPost.comments.length+'';
+                    currentPost.comments.push(comment);
+                }
+
+                this.savePost(currentPost, (err, post)=>
+                {
+                    done(err, comment);
+                });
+            }
+        });
+        
+    }
+
+    public  DeleteComment(comment: IComment, postId: number,  done:(err)=>void)
+    {
+        this.getPost(postId, (err, currentPost) =>
+        {
+            if (err)
+            {
+                done(err);
+            }
+            else 
+            {
+                if (comment.id && currentPost.comments)
+                {
+                    for (var idx = 0; idx < currentPost.comments.length; idx++)
+                    {   
+                        if (currentPost.comments[idx].id == comment.id)
+                        {
+                            delete currentPost.comments[idx];
+                            break;
+                        }
+                    }
+                }
+            
+                this.savePost(currentPost, (err, post) =>
+                {
+                    done(err);
+                });
+            }
         });
     }
     
     public  Init(parameters: {[id:string]: any}, done: (err)=>void)
     {
-        this.savePost = parameters['savePost'];
+        this.savePost = parameters['savepost'];
         this.getUser = parameters['getuser'];
+        this.getPost = parameters['getpost'];
     }
 }
 
