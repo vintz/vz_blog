@@ -4,6 +4,7 @@ exports.BlogContextName = {
     Posts: 'posts',
     Login: 'login',
     User: 'user',
+    Comments: 'comments'
 };
 exports.AdminContextName = {
     MainAdmin: 'admin',

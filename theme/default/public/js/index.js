@@ -35,13 +35,44 @@ function decodeHtml(html) {
     return txt.value;
 }
 
+
+
+var offset = 0;
+
 function savecomment()
 {
     var comment = jQuery('#newComment').val();
     var postId = jQuery('#postId').val();
     var data = { comment: comment, postId: postId, token: getSessionToken() };
     post(getDomain(), '/savecomment', '', data, null, function ( result, status) {
-        alert(result);
+        if (result.id)
+        {
+            
+            jQuery('#newComment').val('');
+            showToaster(result.message, 'success');
+            offset = 0;
+            getComments();
+        }
     });
 
+}
+
+function getComments()
+{
+    var postId = jQuery('#postId').val();
+    get(getDomain(), '/comments/'+postId+'?offset='+offset, '', null, null, function ( result, status) {
+        jQuery('#post_comments').html(result);
+    }, manage_error);
+}
+
+function nextComments()
+{
+    offset++;
+    getComments();
+}
+
+function previousComments()
+{
+    offset--;
+    getComments();
 }

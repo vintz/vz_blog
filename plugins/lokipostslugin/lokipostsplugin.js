@@ -5,6 +5,30 @@ const fs = require('fs');
 const PostsCollectionName = 'Posts';
 class LokiDataAccess {
     constructor() {
+        this.SavePost = (post, done) => {
+            post = this.saveData(post, this.postsCollection);
+            done(null, post);
+        };
+        this.GetPost = (id, done, published) => {
+            var res = this.postsCollection.get(id);
+            if (res) {
+                res = JSON.parse(JSON.stringify(res));
+                if (!published || res.published) {
+                    var author = this.GetUser(res.authorId);
+                    if (author != null) {
+                        res.author =
+                            {
+                                name: author.name
+                            };
+                    }
+                    res.id = res['$loki'];
+                }
+                else {
+                    res = null;
+                }
+            }
+            done(null, res);
+        };
         this.saveData = (data, collection) => {
             if (data['$loki']) {
                 data = collection.update(data);
@@ -104,33 +128,9 @@ class LokiDataAccess {
         }
         done(null, res);
     }
-    SavePost(post, done) {
-        post = this.saveData(post, this.postsCollection);
-        done(null, post);
-    }
     DeletePost(post, done) {
         this.postsCollection.remove(post);
         done(null);
-    }
-    GetPost(id, done, published) {
-        var res = this.postsCollection.get(id);
-        if (res) {
-            res = JSON.parse(JSON.stringify(res));
-            if (!published || res.published) {
-                var author = this.GetUser(res.authorId);
-                if (author != null) {
-                    res.author =
-                        {
-                            name: author.name
-                        };
-                }
-                res.id = res['$loki'];
-            }
-            else {
-                res = null;
-            }
-        }
-        done(null, res);
     }
 }
 exports.Plugin = LokiDataAccess;

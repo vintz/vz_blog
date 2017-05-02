@@ -43,6 +43,7 @@ export var BlogContextName =
     Posts: 'posts',
     Login: 'login',
     User: 'user',
+    Comments: 'comments'
 }
 
 export var AdminContextName = 
@@ -105,7 +106,7 @@ export enum DateCriteria
 export interface IComment
 {
     id: string;
-    author?: string;
+    commentAuthor?: string;
     authorId: number;
     content: string;
     date: number;

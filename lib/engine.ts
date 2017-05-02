@@ -150,6 +150,7 @@ export class BlogEngine
         
         this.router.get('/*', this.serveFile);
         
+
         this.router.post('/getchallenges', this.getChallenges);
         this.router.post('/login', this.login);
 
@@ -163,6 +164,7 @@ export class BlogEngine
         this.router.post('/saveconfig', this.saveConfig);
         
         this.router.post('/savecomment', this.saveComment);
+        
         
         
         this.actions = {};
@@ -505,12 +507,61 @@ export class BlogEngine
         }
     }
 
+     protected getComments = (req: Request, res: Response, next) =>
+     {
+        var context: IContext = this.getContext(req);
+        var offset = parseInt(req.params.offset);
+        var postId = parseInt(req.params.id);
+        this.innerGetComments(res, postId, context, offset, false );
+     }
+
+     
+
     protected sendDefaultTemplate(context:IContext, res: Response)
     {
         var result = this.blogTpl.Render('{{#_template}}default{{/_template}}', context.Data);
         res.status(200).end(result);
     }
 
+    protected sendCommentsTemplate(context:IContext, res: Response)
+    {
+        var result = this.blogTpl.Render('{{#_template}}comments{{/_template}}', context.Data);
+        res.status(200).end(result);
+    }
+
+
+    protected innerGetComments(res: Response, postId:number , context: IContext, offset: number, fullPageLoad: boolean)
+    {
+        var limit = 5;
+        var finalOffset = offset * limit;
+        this.commentDataAccess.GetComments(limit, finalOffset, postId, (err, comments)=>
+        {
+            if (err)
+            {
+                this.manageError(err, res);
+            }
+            else 
+            {
+                context.Data.post.previouscomments = (offset != 0);
+                context.Data.post.comments = comments;
+                this.commentDataAccess.CountComments((err, count: number) =>
+                {
+                    context.Data.post.nextcomments = (finalOffset + limit  < count);
+                    if (fullPageLoad)
+                    {
+                        this.sendDefaultTemplate(context, res);
+                    }
+                    else 
+                    {
+                        this.sendCommentsTemplate(context, res);
+                    }
+                }, postId);
+                
+                
+                
+            }
+        })
+    }
     protected generateBlogPage = (req: Request, res: Response, next) =>
     {
         var context:IContext = this.getContext(req);
@@ -552,12 +603,14 @@ export class BlogEngine
                                 var renderedMd = this.blogTpl.RenderText(context.Data.post.content);
                                 context.Data.post.content = renderedMd.text;
                                 context.Data.summary = renderedMd.summary;
+                                this.innerGetComments(res, postId, context, 0, true);
                             }
                             else 
                             {
                                 context.Data.post = null; 
+                                this.sendDefaultTemplate(context, res);
                             }
-                            this.sendDefaultTemplate(context, res);
+                            
                         }
                     }
                     ,true);
@@ -589,6 +642,13 @@ export class BlogEngine
             case BlogContextName.Login:
                 this.sendDefaultTemplate(context, res);    
                 break;
+
+            case BlogContextName.Comments:
+                    var offset = parseInt(context.Data.query.offset);
+                    var currentPostId: number = parseInt(req.params[0]);
+                    context.Data.post = {};
+                    this.innerGetComments(res, currentPostId, context, offset, false );
+                    break;
         }
     }
 
@@ -977,7 +1037,8 @@ export class BlogEngine
     {
         winston.info('Saving data plugin configuration');
         var dataPlugin = req.body.dataplugin;
-        this.dataAccess.SaveActivePlugin(PluginType.PostsDataAccess,  dataPlugin.active);
+        
+        this.dataAccess.SaveActivePlugin(PluginType.PostsDataAccess, dataPlugin.active);
         var pluginParams = {};
         
         for (var key in dataPlugin.parameters)

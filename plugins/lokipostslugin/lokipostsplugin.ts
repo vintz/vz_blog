@@ -134,7 +134,7 @@ class LokiDataAccess implements  Pluggable, PostDataAccess
         done(null, res);
     }
 
-    public  SavePost(post:IPost,  done:(err, post: IPost) => void)
+    public  SavePost = (post:IPost,  done:(err, post: IPost) => void) =>
     {
        post = this.saveData(post, this.postsCollection);
        done(null, post);
@@ -146,7 +146,7 @@ class LokiDataAccess implements  Pluggable, PostDataAccess
         done(null);
     }
 
-    public  GetPost(id, done:(err, post: IPost) => void, published?: boolean)
+    public  GetPost = (id, done:(err, post: IPost) => void, published?: boolean) =>
     {
         var res = this.postsCollection.get(id);
         if (res)

@@ -25,15 +25,23 @@ class LokiDataAccess implements  Pluggable, CommentDataAccess
             {
                 if (currentPost.comments && currentPost.comments.length > offset)
                 {
-                    currentPost.comments.sort((a: IComment, b: IComment)=>
+                    currentPost.comments = currentPost.comments.sort((a: IComment, b: IComment)=>
                     {
-                        return a.date - b.date;
+                        return b.date - a.date;
                     });
 
                     for (var idx = offset; idx < Math.min(limit + offset, currentPost.comments.length); idx++ )
                     {
                         var currentComment = currentPost.comments[idx];
-                        currentComment.author = this.getUser(currentComment.authorId).name;
+                        if (currentComment.authorId)
+                        {
+                            var currentAuthor = this.getUser(currentComment.authorId);
+                            currentComment.commentAuthor = currentAuthor.name;
+                        }
+                        else 
+                        {
+                            currentComment.commentAuthor = 'ANONYMOUS';
+                        }
                         result.push(currentPost.comments[idx]);
                     }
                 }

@@ -6,13 +6,9 @@
 
     <hr />
     <h2>{{#_translate}}COMMENTS{{/_translate}}</h2>
-    {{#comments}}
-        {{content}} <br />
-        {{#_date}}{{date}}{{/_date}} - {{author}}
-    {{/comments}}
-    {{^comments}}
-        {{#_translate}} NO_COMMENTS {{/_translate}}
-    {{/comments}}
+    <div id="post_comments">
+        {{#_template}}innercomments{{/_template}}
+    </div>
     <br />
     <hr />
     {{#_template}}commenteditor{{/_template}}
