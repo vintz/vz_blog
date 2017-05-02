@@ -1,7 +1,8 @@
 export enum PluginType
 {
     PostsDataAccess = 0, 
-    CommentsDataAccess = 1
+    CommentsDataAccess = 1,
+    PostParser = 2
 }
 
 export abstract class Pluggable

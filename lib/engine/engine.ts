@@ -53,13 +53,53 @@ export abstract class  BlogEngine
             this.init(() => 
             {
                 this.router.get('/*', this.serveFile);
-                this.finishInitialization(done);
+                this.finishInitialization(()=>
+                {
+                    this.initializationFinished(()=>
+                    {
+                        done();
+                    });
+                });
+            });
+        });
+    }
+
+    protected finishInitialization( done: ()=>void)
+    {
+        winston.info('Starting webserver');
+        var server = express();
+        server.use(bodyParser.json());
+        server.use(bodyParser.urlencoded({ extended: true }));
+        server.use(cookieParser());
+        server.use(function(req, res, next){
+            res.header("Access-Control-Allow-Origin", "*");
+            res.header("Access-Control-Allow-Methods", "GET, POST");
+            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+            if (req.method === 'OPTIONS') {
+                res.sendStatus(200);
+            }
+            else {
+                next();
+            }
+        });
+        server.use('/', this.getRouter());
+        winston.info('Router started');
+
+        var httpServ = http.createServer(server);
+        this.i8n = new I8N(this.config.i8nPath, this.config.defaultLanguage, this.learningMode);
+        this.auth = new Auth(this.config.challengeTimeToLive, this.config.challengeNbr, this.config.secretKey);
+        this.blogTpl = new BlogTplEngine(this.config.currentThemePath, this.config.defaultThemePath, this.config.tplFoldername, this.config.blogFoldernname, this.config.adminFoldername, this.config.authorFoldername, this.config.markdownFoldername, this.config.excerptLength, this.config.shortExcerptLength, this.config.templateExtension, this.i8n, ()=>
+        {
+            httpServ.listen(this.config.port,()=>
+            {
+                winston.info('Server started on port : ' + this.config.port);
+                done();
             });
         });
     }
 
     protected abstract init(done: ()=>void);
-    protected abstract initializationFinished();
+    protected abstract initializationFinished(done: ()=>void);
     
     protected translate(src: string): string
     {
@@ -146,42 +186,21 @@ export abstract class  BlogEngine
         }
         
         this.dataAccess.SetPluginParameters(PluginType.CommentsDataAccess, pluginParams);
-    }
 
-    protected finishInitialization( done: ()=>void)
-    {
-        winston.info('Starting webserver');
-        var server = express();
-        server.use(bodyParser.json());
-        server.use(bodyParser.urlencoded({ extended: true }));
-        server.use(cookieParser());
-        server.use(function(req, res, next){
-            res.header("Access-Control-Allow-Origin", "*");
-            res.header("Access-Control-Allow-Methods", "GET, POST");
-            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-            if (req.method === 'OPTIONS') {
-                res.sendStatus(200);
-            }
-            else {
-                next();
-            }
-        });
-        server.use('/', this.getRouter());
-        winston.info('Router started');
-
-        var httpServ = http.createServer(server);
-        this.i8n = new I8N(this.config.i8nPath, this.config.defaultLanguage, this.learningMode);
-        this.auth = new Auth(this.config.challengeTimeToLive, this.config.challengeNbr, this.config.secretKey);
-        this.blogTpl = new BlogTplEngine(this.config.currentThemePath, this.config.defaultThemePath, this.config.tplFoldername, this.config.blogFoldernname, this.config.adminFoldername, this.config.authorFoldername, this.config.markdownFoldername, this.config.excerptLength, this.config.shortExcerptLength, this.config.templateExtension, this.i8n, ()=>
+        var parserPlugin = req.body.parserplugin;
+        this.dataAccess.SaveActivePlugin(PluginType.PostParser,  parserPlugin.active);
+        var pluginParams = {};
+        
+        for (var key in parserPlugin.parameters)
         {
-            this.initializationFinished();
-            httpServ.listen(this.config.port,()=>
-            {
-                winston.info('Server started on port : ' + this.config.port);
-                done();
-            });
-        });
+            var current = parserPlugin.parameters[key];
+            pluginParams[current.name] = current.value;
+        }
+        
+        this.dataAccess.SetPluginParameters(PluginType.PostParser, pluginParams);
     }
+
+   
 
     protected logInfo(message)
     {

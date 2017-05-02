@@ -28,8 +28,68 @@ export  class StandardBlogEngine extends BlogEngine
         super(dataAccess, done);
     }
 
+    protected initAllPlugins = (pluginsToLoad:PluginType[], done: ()=>void) =>
+    {
+        if (pluginsToLoad.length > 0)
+        {
+            console.log(pluginsToLoad);
+            var currentPluginType = pluginsToLoad.shift();
+            var pluginIdx = this.dataAccess.GetActivePlugin(currentPluginType);
+            var error;
+            if (pluginIdx && pluginIdx != '')
+            {
+                var currentPlugin: IPlugin = this.pluginManager.GetPlugin(pluginIdx);
+                var currentPluginInstance: Pluggable = new currentPlugin.Class['Plugin']();
+                var parameters = this.dataAccess.GetPluginParameters(currentPluginType);
+                
+                switch(currentPluginType)
+                {
+                    case PluginType.PostsDataAccess: 
+                        parameters['getuser'] = this.dataAccess.GetUser;  
+                        this.postDataAccess = <PostDataAccess>currentPluginInstance; 
+                        error = Errors.UnableToStartPostDataAccess;
+                        break;
+
+                    case PluginType.CommentsDataAccess:
+                        parameters['getuser'] = this.dataAccess.GetUser;
+                        parameters['savepost'] = this.postDataAccess.SavePost;
+                        parameters['getpost'] = this.postDataAccess.GetPost;   
+                        this.commentDataAccess = <CommentDataAccess>currentPluginInstance;  
+                        error = Errors.UnableToStartCommentDataAccess;                      
+                        break;
+
+                    case PluginType.PostParser:
+                        this.postParser = <PostParser>currentPluginInstance;
+                        error = Errors.UnableToStartPostParser;
+                        break;
+                }
+
+                currentPluginInstance.Init(parameters, (err)=>
+                {
+                    if (!err)
+                    {
+                        this.initAllPlugins(pluginsToLoad, done);
+                    }
+                    else 
+                    {
+                        this.logError(error.Text);
+                    }
+                });
+            }
+            else 
+            {
+                 this.initAllPlugins(pluginsToLoad, done);
+            }
+           
+        }
+        else 
+        {
+            done();
+        }
+    }
     protected init(done: ()=>void)
     {
+        
         this.logInfo('Standard mode activated');
         this.config = this.dataAccess.LoadConfig();
         this.parseParameters();
@@ -39,50 +99,27 @@ export  class StandardBlogEngine extends BlogEngine
         this.themeManager = new ThemeManager(this.config.themeFolderPath);
         this.themeManager.Init();
         var postDataPluginIdx = this.dataAccess.GetActivePlugin(PluginType.PostsDataAccess);
-        
-        if (postDataPluginIdx && postDataPluginIdx != '')
+        var pluginToLoad = [];
+        for (var key in PluginType)
         {
-            var currentPostPlugin = this.pluginManager.GetPlugin(postDataPluginIdx);
-            this.postDataAccess = <PostDataAccess>(new currentPostPlugin.Class['Plugin']());
-            var parameters = this.dataAccess.GetPluginParameters(PluginType.PostsDataAccess);
-            parameters['getuser'] = this.dataAccess.GetUser;
-            this.postDataAccess.Init(parameters, (err)=>
+            if (typeof PluginType[key] == 'number')
             {
-                if (!err)
-                {
-                    var commentDataPluginIdx = this.dataAccess.GetActivePlugin(PluginType.CommentsDataAccess);
-                    if (commentDataPluginIdx && commentDataPluginIdx != '')
-                    {
-                        var currentCommentPlugin = this.pluginManager.GetPlugin(commentDataPluginIdx);
-                        this.commentDataAccess = <CommentDataAccess>(new currentCommentPlugin.Class['Plugin']());
-                        var parameters = this.dataAccess.GetPluginParameters(PluginType.CommentsDataAccess);
-                        parameters['getuser'] = this.dataAccess.GetUser;
-                        parameters['savepost'] = this.postDataAccess.SavePost;
-                        parameters['getpost'] = this.postDataAccess.GetPost;
-                        this.commentDataAccess.Init(parameters, (err)=>
-                        {
-                            if (!err)
-                            {
-                                this.finishStandardMode(done);
-                            }
-                            else 
-                            {
-                                this.logError(Errors.UnableToStartcommentDataAccess.Text);
-                            }
-                        });
-                    }
-                }
-                else 
-                {
-                   this.logError(Errors.UnableToStartPostDataAccess.Text);
-                }
-            });
+                pluginToLoad.push(PluginType[key]);
+            }
         }
+        this.initAllPlugins(pluginToLoad ,()=>
+        {
+            this.finishStandardMode(done);
+        })
     }
 
-    protected initializationFinished()
+    protected initializationFinished(done: ()=>void)
     {
-        this.postParser = new PostParser(this.blogTpl);
+        if (this.postParser)
+        {
+            this.postParser.SetTemplateEngine(this.blogTpl);
+        }
+        done();
     }
 
     protected finishStandardMode(done: ()=>void)
@@ -492,11 +529,7 @@ export  class StandardBlogEngine extends BlogEngine
             this.config.currentThemePath = req.body.theme;
             this.dataAccess.SaveConfig(this.config);
             this.saveDataPlugin(req);
-
-
-
             res.status(200).json({ok:true, message:this.translate('CONFIG_SAVED')});
-
             this.dataAccess.ForceSave(()=>{process.exit(1);});
 
         }
@@ -710,6 +743,8 @@ export  class StandardBlogEngine extends BlogEngine
                     var dataPluginParameters = this.dataAccess.GetPluginParameters(PluginType.PostsDataAccess);
                     var commentsPlugin =  this.dataAccess.GetActivePlugin(PluginType.CommentsDataAccess);
                     var commentsPluginParameters = this.dataAccess.GetPluginParameters(PluginType.CommentsDataAccess);
+                    var parserPlugin =  this.dataAccess.GetActivePlugin(PluginType.PostParser);
+                    var parsersPluginParameters = this.dataAccess.GetPluginParameters(PluginType.PostParser);
                     context.Data.langs = [ // TODO GET LANGS FROM LANG FILES
                         {key: 'FR', label: this.translate('FRENCH')},
                         {key: 'EN', label: this.translate('ENGLISH')},
@@ -719,9 +754,10 @@ export  class StandardBlogEngine extends BlogEngine
                     context.Data.themes = this.themeManager.GetThemes(this.config.currentThemePath);
                     context.Data.dataPlugins = this.pluginManager.GetPlugins(PluginType.PostsDataAccess, dataPlugin, dataPluginParameters);
                     context.Data.commentsPlugins = this.pluginManager.GetPlugins(PluginType.CommentsDataAccess, commentsPlugin, commentsPluginParameters);
+                    context.Data.parserPlugins = this.pluginManager.GetPlugins(PluginType.PostParser, parserPlugin, parsersPluginParameters);
                     context.Data.config = this.config;
                     context.Data.sidenav = SidenavContextName.Config;
-                   this.sendTemplate(context, res, DEFAULT);
+                    this.sendTemplate(context, res, DEFAULT);
                     break;
                     
                 case AdminContextName.AuthorPosts: 

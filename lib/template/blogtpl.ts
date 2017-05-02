@@ -59,16 +59,11 @@ export class BlogTplEngine extends TemplateEngine
             }); 
         });
     }
-
-    protected postParser ()
-    {
-        return new PostParser(this);
-    }
-
+    
     private _excerpt = (text, render, excerptLength) =>
     {
         var result = render(text);
-        result = this.postParser().Parse(result, true);
+        result = this.postParser.Parse(result, true);
         result = striptags(result);
         if (result.length >= excerptLength + 3)
         {
@@ -122,7 +117,7 @@ export class BlogTplEngine extends TemplateEngine
     {   
         return (text, render) =>
         {
-            var parser = this.postParser();
+            var parser = this.postParser;
             var result = parser.Parse(render(text));
             //this.context.Data.summary = parser.GetSummary();
             return result;
@@ -158,7 +153,7 @@ export class BlogTplEngine extends TemplateEngine
     public RenderText(text): IRenderedText
     {
         
-        var parser = this.postParser();
+        var parser = this.postParser;
         var rendered = parser.Parse(text);
         var result = {
             text: rendered,

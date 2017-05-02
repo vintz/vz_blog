@@ -1,0 +1,10 @@
+{
+    "Type": 2,
+    "ClassFile": "mdpostparser.js",
+    "Id": "__mdPostParser",
+    "Label": "Markdown Post Parser",
+    "Description": "MD_POSTPARSER_DESCRIPTION", 
+    "Parameters":
+    [
+    ]
+  }

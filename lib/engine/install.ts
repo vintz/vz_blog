@@ -40,11 +40,12 @@ export  class  InstallerBlogEngine extends BlogEngine
         this.parseParameters();
         this.router.get('/', this.showInstaller);
         this.router.post('/saveadmininfo', this.saveAdminInfo);
-        this.finishInitialization(done);
+        done();
     }
 
-    protected initializationFinished()
+    protected initializationFinished(done: ()=>void)
     {
+        done();
     }
 
     protected showInstaller = (req: express.Request, res: express.Response, next) => 

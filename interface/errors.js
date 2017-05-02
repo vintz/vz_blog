@@ -36,4 +36,12 @@ exports.Errors = {
         Text: 'UNABLE_TO_LOAD_THEMES',
         Code: 8
     },
+    UnableToStartCommentDataAccess: {
+        Text: 'UNABLE_TO_START_COMMENTS_DATA_ACCESS',
+        Code: 9
+    },
+    UnableToStartPostParser: {
+        Text: 'UNABLE_TO_START_POST_PARSER',
+        Code: 10
+    },
 };

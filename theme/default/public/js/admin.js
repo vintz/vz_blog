@@ -152,6 +152,17 @@ var saveConfigMain = function(installer)
         activeCommentPluginParameters.push(parameter);
     });
 
+    var activeParserPlugin = jQuery('#parserPlugin').val();
+    var activeParserPluginParameters = [];
+    jQuery('#pluginParameters_'+activeCommentPlugin +' :input').each(function(idx,elem){	
+        
+        var parameter = {
+            name: this.id,
+            value: this.value
+        };
+        activeParserPluginParameters.push(parameter);
+    });
+
     var info = {
         title: title,
         motto: motto,
@@ -165,7 +176,13 @@ var saveConfigMain = function(installer)
         {   
             active: activeCommentPlugin,
             parameters: activeCommentPluginParameters
-        }
+        },
+        parserplugin:
+        {
+            active: activeParserPlugin,
+            parameters: activeParserPluginParameters
+        },
+
     }
     if (installer)
     {

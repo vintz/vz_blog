@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as winston from 'winston';
 import {IRenderedText} from '../../interface/data';
+import {PostParser} from '../parsing/parser';
 
 export abstract class TemplateEngine
 {
@@ -11,6 +12,7 @@ export abstract class TemplateEngine
     protected fullTemplatesLoad: ()=>void
     protected keywords: {[index: string]: ()=>void} 
     protected tplExtension: string;
+    protected postParser: PostParser;
     
     constructor(tplExtension)
     {
@@ -136,5 +138,10 @@ export abstract class TemplateEngine
                 return '';
             }
         }
+    }
+
+    public SetPostParser(postParser: PostParser)
+    {
+        this.postParser = postParser;
     }
 }
