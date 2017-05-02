@@ -1,8 +1,9 @@
-import {BlogEngine} from './lib/engine';
+import {EngineFactory} from './lib/engine/enginefactory';
 
-var bg = new BlogEngine(()=>
+EngineFactory.CreateEngine((err,engine)=>
 {
-
+    if (err)
+    {
+        console.log(err);
+    }
 });
-        
-

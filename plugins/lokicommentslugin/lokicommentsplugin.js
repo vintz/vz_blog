@@ -93,6 +93,7 @@ class LokiDataAccess {
         this.savePost = parameters['savepost'];
         this.getUser = parameters['getuser'];
         this.getPost = parameters['getpost'];
+        done(null);
     }
 }
 exports.Plugin = LokiDataAccess;

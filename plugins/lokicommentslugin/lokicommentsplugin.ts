@@ -149,6 +149,7 @@ class LokiDataAccess implements  Pluggable, CommentDataAccess
         this.savePost = parameters['savepost'];
         this.getUser = parameters['getuser'];
         this.getPost = parameters['getpost'];
+        done(null);
     }
 }
 

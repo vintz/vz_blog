@@ -1,4 +1,7 @@
 "use strict";
-const engine_1 = require('./lib/engine');
-var bg = new engine_1.BlogEngine(() => {
+const enginefactory_1 = require('./lib/engine/enginefactory');
+enginefactory_1.EngineFactory.CreateEngine((err, engine) => {
+    if (err) {
+        console.log(err);
+    }
 });
