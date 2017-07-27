@@ -13,6 +13,7 @@ exports.AdminContextName = {
     Users: 'users',
     User: 'user',
     AdvancedConfig: 'advancedconfig',
+    Preview: 'preview',
 };
 exports.SidenavContextName = {
     Posts: 'paginator',
@@ -20,6 +21,7 @@ exports.SidenavContextName = {
     Post: 'summary',
     EditPost: 'editormenu',
     Config: 'configmenu',
+    Preview: 'preview',
 };
 (function (DateCriteria) {
     DateCriteria[DateCriteria["Before"] = 0] = "Before";

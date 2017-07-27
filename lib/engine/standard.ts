@@ -584,46 +584,7 @@ export  class StandardBlogEngine extends BlogEngine
                 break;
 
             case BlogContextName.Post:
-                var postId = context.Data.query.id?context.Data.query.id: context.Data.params;
-                if (postId)
-                {
-                    this.postDataAccess.GetPost(postId, (err, post: IPost) =>
-                    {
-                        if  (err)
-                        {
-                            this.manageError(err, res);
-                        }
-                        else 
-                        {
-                            
-                            if (post)
-                            {
-                                context.Data.sidenav = SidenavContextName.Post;
-                                context.Data.post = post;
-                                var renderedMd = this.blogTpl.RenderText(context.Data.post.content);
-                                context.Data.post.content = renderedMd.text;
-                                context.Data.summary = renderedMd.summary;
-                                this.innerGetComments(res, postId, context, 0, true);
-                            }
-                            else 
-                            {
-                                context.Data.post = null; 
-                                this.sendTemplate(context, res, DEFAULT);
-                            }
-                            
-                        }
-                    }
-                    ,true);
-                    
-                }
-                else 
-                {
-                    this.generatePosts(req, res, context, null, ()=>
-                    {
-                        this.sendTemplate(context, res, DEFAULT);
-                    });
-                    
-                }
+                this.displayPost(req, res, next, context, true);
                 break;
 
             case BlogContextName.User:
@@ -642,6 +603,57 @@ export  class StandardBlogEngine extends BlogEngine
                     context.Data.post = {};
                     this.innerGetComments(res, currentPostId, context, offset, false );
                     break;
+        }
+    }
+
+    protected displayPost = (req: Request, res: Response, next, context: IContext, published: boolean)=>
+    {
+        var postId = context.Data.query.id?context.Data.query.id: context.Data.params;
+        if (postId)
+        {
+            this.postDataAccess.GetPost(postId, (err, post: IPost) =>
+            {
+                if  (err)
+                {
+                    this.manageError(err, res);
+                }
+                else 
+                {
+                    
+                    if (post)
+                    {
+                        context.Data.sidenav = SidenavContextName.Post;
+                        context.Data.post = post;
+                        var renderedMd = this.blogTpl.RenderText(context.Data.post.content);
+                        context.Data.post.content = renderedMd.text;
+                        context.Data.summary = renderedMd.summary;
+                        if (published) 
+                        {
+                            this.innerGetComments(res, postId, context, 0, true);
+                        }
+                        else 
+                        {
+                            this.sendTemplate(context, res, DEFAULT); 
+                        }
+                    }
+                    else 
+                    {
+                        context.Data.post = null; 
+                        this.sendTemplate(context, res, DEFAULT);
+                    }
+                    
+                }
+            }
+            ,published);
+            
+        }
+        else 
+        {
+            this.generatePosts(req, res, context, null, ()=>
+            {
+                this.sendTemplate(context, res, DEFAULT);
+            });
+            
         }
     }
 
@@ -768,6 +780,10 @@ export  class StandardBlogEngine extends BlogEngine
                     });
                     
                     break;
+
+                case AdminContextName.Preview:
+                    this.displayPost(req, res, next, context, false);
+                    break; 
 
                 case AdminContextName.EditPost:
                     var postId = context.Data.query.id?context.Data.query.id: context.Data.params;

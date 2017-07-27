@@ -25,7 +25,7 @@ import {StandardBlogEngine} from './standard';
 import {InstallerBlogEngine} from './install';
 
 
-class BlogEnginFactory
+class BlogEngineFactory
 {
     constructor()
     {
@@ -63,5 +63,5 @@ class BlogEnginFactory
     }
 }
 
-export var EngineFactory = new BlogEnginFactory();
+export var EngineFactory = new BlogEngineFactory();
 

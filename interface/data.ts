@@ -55,6 +55,7 @@ export var AdminContextName =
     Users: 'users',
     User: 'user',
     AdvancedConfig: 'advancedconfig',
+    Preview: 'preview',
 }
 
 export var  SidenavContextName = 
@@ -64,6 +65,7 @@ export var  SidenavContextName =
     Post: 'summary',
     EditPost: 'editormenu',
     Config: 'configmenu',
+    Preview: 'preview',
 
 }
 
